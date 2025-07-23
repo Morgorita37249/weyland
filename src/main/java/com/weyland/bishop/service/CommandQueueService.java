@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 @RequiredArgsConstructor
 public class CommandQueueService {
-
+    private final MetricsService metricsService;
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
             2,
             5,
@@ -75,11 +75,16 @@ public class CommandQueueService {
             }
         });
     }
-
     private void processCommand(Command command, long delayMs) {
+        if (command.getPriority() == Priority.CRITICAL) {
+            metricsService.incrementCritical();
+        } else {
+            metricsService.incrementCommon();
+        }
         String result = executeAndAuditCommand(command, delayMs);
         System.out.println("[DEBUG] Command processed: " + result);
     }
+
 
     @WeylandWatchingYou(mode = AuditMode.KAFKA)
     private String executeAndAuditCommand(Command command, long delayMs) {
