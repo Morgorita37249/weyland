@@ -1,74 +1,70 @@
 package com.weyland.bishop.exception;
 
-import org.springframework.http.*;
-import org.springframework.http.converter.HttpMessageNotReadableException;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-@ControllerAdvice(basePackages = "com.weyland.bishop")
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Новый обработчик для ошибок десериализации
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<WeylandErrorResponse> handleJsonErrors(HttpMessageNotReadableException ex, WebRequest request) {
-        String errorMessage = "Invalid request format";
+    // Обработка переполнения очереди
+    @ExceptionHandler(QueueFullException.class)
+    public ResponseEntity<WeylandErrorResponse> handleQueueFullException(
+            QueueFullException ex, WebRequest request) {
+        WeylandErrorResponse errorResponse = new WeylandErrorResponse(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "Service Unavailable",
+                ex.getMessage(),
+                request.getDescription(false).replace("uri=", "")
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
+    }
 
-        // Специальная обработка для ошибок enum
-        if (ex.getMessage() != null && ex.getMessage().contains("Priority")) {
-            errorMessage = "Invalid priority value. Allowed values: COMMON, CRITICAL";
-        } else if (ex.getMessage() != null && ex.getMessage().contains("time")) {
-            errorMessage = "Invalid time format. Use ISO8601 (e.g. 2023-01-01T12:00:00Z)";
-        }
+    // Обработка ошибок валидации
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<WeylandErrorResponse> handleValidationExceptions(
+            MethodArgumentNotValidException ex, WebRequest request) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .findFirst()
+                .orElse(ex.getMessage());
 
-        WeylandErrorResponse response = new WeylandErrorResponse(
+        WeylandErrorResponse errorResponse = new WeylandErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 errorMessage,
                 request.getDescription(false).replace("uri=", "")
         );
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    // Остальные обработчики остаются без изменений
-    @ExceptionHandler(QueueFullException.class)
-    public ResponseEntity<WeylandErrorResponse> handleQueueFull(QueueFullException ex, WebRequest request) {
-        WeylandErrorResponse response = new WeylandErrorResponse(
-                HttpStatus.TOO_MANY_REQUESTS.value(),
-                "Queue overflow",
+    // Обработка ошибок валидации через ConstraintViolation
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<WeylandErrorResponse> handleConstraintViolationException(
+            ConstraintViolationException ex, WebRequest request) {
+        WeylandErrorResponse errorResponse = new WeylandErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
                 ex.getMessage(),
                 request.getDescription(false).replace("uri=", "")
         );
-        return new ResponseEntity<>(response, HttpStatus.TOO_MANY_REQUESTS);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<WeylandErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex, WebRequest request) {
-        List<String> errors = ex.getBindingResult().getFieldErrors()
-                .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.toList());
-
-        WeylandErrorResponse response = new WeylandErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation failed",
-                String.join("; ", errors),
-                request.getDescription(false).replace("uri=", "")
-        );
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-    }
-
+    // Обработка всех остальных исключений
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<WeylandErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
-        WeylandErrorResponse response = new WeylandErrorResponse(
+    public ResponseEntity<WeylandErrorResponse> handleAllExceptions(
+            Exception ex, WebRequest request) {
+        WeylandErrorResponse errorResponse = new WeylandErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal error",
-                "Android malfunction detected: " + ex.getMessage(),
+                "Internal Server Error",
+                ex.getMessage(),
                 request.getDescription(false).replace("uri=", "")
         );
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

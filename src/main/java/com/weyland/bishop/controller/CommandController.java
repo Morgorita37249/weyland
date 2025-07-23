@@ -1,6 +1,7 @@
 package com.weyland.bishop.controller;
 import com.weyland.bishop.audit.AuditMode;
 import com.weyland.bishop.audit.WeylandWatchingYou;
+import com.weyland.bishop.exception.QueueFullException;
 import com.weyland.bishop.model.Command;
 import com.weyland.bishop.model.Priority;
 import com.weyland.bishop.service.CommandQueueService;
@@ -20,12 +21,17 @@ public class CommandController {
 
     @PostMapping
     @WeylandWatchingYou(mode = AuditMode.KAFKA)
-    public ResponseEntity<String> addCommand(@Valid @RequestBody Command command){
-        if (command.getPriority() == Priority.CRITICAL){
-            return ResponseEntity.ok("CRITICAL: " + command.getDescription());
-        } else{
-            queueService.addCommand(command);
-            return ResponseEntity.ok("COMMON: " + command.getDescription());
+    public ResponseEntity<?> addCommand(@Valid @RequestBody Command command) {
+        try {
+            if (command.getPriority() == Priority.CRITICAL) {
+                queueService.executeCriticalCommand(command);
+                return ResponseEntity.ok("CRITICAL: " + command.getDescription());
+            } else {
+                queueService.addCommand(command);
+                return ResponseEntity.ok("COMMON: " + command.getDescription());
+            }
+        } catch (QueueFullException e) {
+            throw e; // Будет обработано GlobalExceptionHandler
         }
     }
 }
