@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 public class MetricsService {
     private final MeterRegistry meterRegistry;
 
-    // Счетчики команд
     private Counter criticalCommandsCounter;
     private Counter commonCommandsCounter;
 

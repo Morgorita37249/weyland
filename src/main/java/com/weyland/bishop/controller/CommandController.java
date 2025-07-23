@@ -31,7 +31,7 @@ public class CommandController {
                 return ResponseEntity.ok("COMMON: " + command.getDescription());
             }
         } catch (QueueFullException e) {
-            throw e; // Будет обработано GlobalExceptionHandler
+            throw e;
         }
     }
 }

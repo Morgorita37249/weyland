@@ -11,7 +11,6 @@ import org.springframework.web.context.request.WebRequest;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Обработка переполнения очереди
     @ExceptionHandler(QueueFullException.class)
     public ResponseEntity<WeylandErrorResponse> handleQueueFullException(
             QueueFullException ex, WebRequest request) {
@@ -24,7 +23,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
-    // Обработка ошибок валидации
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<WeylandErrorResponse> handleValidationExceptions(
             MethodArgumentNotValidException ex, WebRequest request) {
@@ -42,7 +40,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    // Обработка ошибок валидации через ConstraintViolation
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<WeylandErrorResponse> handleConstraintViolationException(
             ConstraintViolationException ex, WebRequest request) {
@@ -55,7 +52,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    // Обработка всех остальных исключений
     @ExceptionHandler(Exception.class)
     public ResponseEntity<WeylandErrorResponse> handleAllExceptions(
             Exception ex, WebRequest request) {
