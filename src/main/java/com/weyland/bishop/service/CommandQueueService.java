@@ -84,7 +84,11 @@ public class CommandQueueService {
         String result = executeAndAuditCommand(command, delayMs);
         System.out.println("[DEBUG] Command processed: " + result);
     }
-
+    public Map<String, Integer> getAuthorStatistics() {
+        Map<String, Integer> stats = new HashMap<>();
+        authorStats.forEach((author, count) -> stats.put(author, count.get()));
+        return stats;
+    }
 
     @WeylandWatchingYou(mode = AuditMode.KAFKA)
     private String executeAndAuditCommand(Command command, long delayMs) {
@@ -99,5 +103,14 @@ public class CommandQueueService {
                 command.getAuthor(),
                 delayMs
         );
+
     }
+    public int getCurrentQueueSize() {
+        return executor.getQueue().size();
+    }
+
+    public int getActiveThreadCount() {
+        return executor.getActiveCount();
+    }
+
 }
