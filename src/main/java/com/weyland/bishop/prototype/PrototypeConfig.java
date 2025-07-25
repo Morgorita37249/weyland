@@ -13,8 +13,7 @@ public class PrototypeConfig {
             *                                              *
             * Доступные endpoints:                         *
             * - POST /api/commands                         *
-            * - GET  /actuator/metrics                     *
-            * - GET  /swagger-ui.html                      *
+            * - GET  /actuator/metrics                     *                     *
             ************************************************
             """;
     }
